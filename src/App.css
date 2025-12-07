@@ -974,7 +974,7 @@ body {
 
 .event-item.event-update {
   border-left: 3px solid var(--warning);
-}
+  }
 
 .event-item.event-delete {
   border-left: 3px solid var(--error);
@@ -1047,7 +1047,7 @@ body {
 .preview-title {
   font-size: 13px;
   color: var(--text-secondary);
-}
+  }
 
 .preview-id {
   display: block;
@@ -1244,7 +1244,7 @@ body {
 
 .save-btn:hover {
   background: var(--accent-hover);
-}
+  }
 
 .reload-notice {
   display: flex;

@@ -461,6 +461,146 @@ body {
   font-size: 12px;
 }
 
+.console-container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  flex-direction: column;
+  height: calc(100vh - 48px);
+  display: flex;
+  overflow: hidden;
+}
+
+.console-header {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  display: flex;
+}
+
+.console-title {
+  align-items: center;
+  gap: 10px;
+  display: flex;
+}
+
+.console-title h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.console-meta {
+  flex: 1;
+}
+
+.token-badge {
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  padding: 4px 10px;
+}
+
+.console-actions {
+  gap: 8px;
+  display: flex;
+}
+
+.console-body {
+  flex-direction: column;
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.console-empty, .console-empty-logs {
+  height: 100%;
+  color: var(--text-muted);
+  text-align: center;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  display: flex;
+}
+
+.console-empty h2, .console-empty-logs p {
+  color: var(--text-secondary);
+  font-size: 18px;
+}
+
+.console-empty p, .console-empty-logs span {
+  font-size: 14px;
+}
+
+.console-logs {
+  font-family: var(--font-mono);
+  background: var(--bg-primary);
+  flex: 1;
+  padding: 12px;
+  font-size: 13px;
+  overflow-y: auto;
+}
+
+.console-log-entry {
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--border-color);
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 8px 12px;
+  display: flex;
+}
+
+.console-log-entry.positive {
+  border-left-color: var(--success);
+  background: #22c55e0d;
+}
+
+.console-log-entry.negative {
+  border-left-color: var(--error);
+  background: #ef44440d;
+}
+
+.log-indicator {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.positive-icon {
+  color: var(--success);
+}
+
+.negative-icon {
+  color: var(--error);
+}
+
+.log-timestamp {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 80px;
+  font-size: 11px;
+}
+
+.log-text {
+  color: var(--text-primary);
+  word-break: break-word;
+  white-space: pre-wrap;
+  flex: 1;
+}
+
+.console-footer {
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 10px 20px;
+  font-size: 12px;
+}
+
 .conversation-item {
   border-radius: var(--radius-md);
   cursor: pointer;

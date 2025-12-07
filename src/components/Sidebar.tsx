@@ -1,4 +1,4 @@
-import { MessageSquare, Activity, Settings, Zap } from 'lucide-react'
+import { MessageSquare, Terminal, Settings, Zap } from 'lucide-react'
 
 interface SidebarProps {
   activeView: string
@@ -12,7 +12,7 @@ export function Sidebar({ activeView, onViewChange, isConfigured = false }: Side
       <div className="sidebar-header">
         <div className="logo">
           <Zap className="logo-icon" />
-          <span>Chat Dashboard</span>
+          <span>Dashboard</span>
         </div>
       </div>
 
@@ -27,11 +27,11 @@ export function Sidebar({ activeView, onViewChange, isConfigured = false }: Side
             <span>Conversations</span>
           </button>
           <button
-            className={`nav-item ${activeView === 'realtime' ? 'active' : ''}`}
-            onClick={() => onViewChange('realtime')}
+            className={`nav-item ${activeView === 'console' ? 'active' : ''}`}
+            onClick={() => onViewChange('console')}
           >
-            <Activity size={18} />
-            <span>Realtime Events</span>
+            <Terminal size={18} />
+            <span>Console</span>
           </button>
           <button
             className={`nav-item ${activeView === 'settings' ? 'active' : ''}`}

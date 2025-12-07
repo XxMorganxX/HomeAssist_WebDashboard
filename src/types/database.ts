@@ -32,6 +32,15 @@ export interface MessageWithToolCalls extends ConversationMessage {
   tool_calls?: ToolCall[]
 }
 
+// Console log entry (for the live console)
+export interface ConsoleLog {
+  id: string
+  timestamp: string
+  token: string
+  text: string
+  is_positive: boolean
+}
+
 export interface RealtimeEvent {
   id: string
   timestamp: Date
