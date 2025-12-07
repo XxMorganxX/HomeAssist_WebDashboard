@@ -447,6 +447,20 @@ body {
   display: flex;
 }
 
+.save-btn.full-width {
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.token-warning {
+  color: var(--warning);
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
 .conversation-item {
   border-radius: var(--radius-md);
   cursor: pointer;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createSupabaseFromCredentials } from '@/lib/supabase'
 
 // End a conversation session
 export async function POST(
@@ -8,7 +8,18 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const supabase = createServerSupabase()
+    const body = await request.json()
+    
+    const { supabase_url, supabase_key } = body
+    
+    if (!supabase_url || !supabase_key) {
+      return NextResponse.json(
+        { success: false, error: 'Missing supabase_url or supabase_key in request body' },
+        { status: 400 }
+      )
+    }
+    
+    const supabase = createSupabaseFromCredentials(supabase_url, supabase_key)
     
     const { data, error } = await supabase
       .from('conversation_sessions')
@@ -33,4 +44,3 @@ export async function POST(
     )
   }
 }
-

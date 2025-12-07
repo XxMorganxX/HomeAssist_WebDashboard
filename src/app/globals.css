@@ -471,6 +471,20 @@ body {
   gap: 6px;
 }
 
+.save-btn.full-width {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.token-warning {
+  font-size: 12px;
+  color: var(--warning);
+  background: var(--warning-bg);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+}
+
 .conversation-item {
   display: flex;
   align-items: center;

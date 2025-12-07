@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createSupabaseFromCredentials } from '@/lib/supabase'
 
 // Record a tool call
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    
+    const { supabase_url, supabase_key } = body
+    
+    if (!supabase_url || !supabase_key) {
+      return NextResponse.json(
+        { success: false, error: 'Missing supabase_url or supabase_key in request body' },
+        { status: 400 }
+      )
+    }
     
     if (!body.message_id || !body.tool_name) {
       return NextResponse.json(
@@ -13,7 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const supabase = createServerSupabase()
+    const supabase = createSupabaseFromCredentials(supabase_url, supabase_key)
     
     const { data, error } = await supabase
       .from('tool_calls')
@@ -43,4 +52,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

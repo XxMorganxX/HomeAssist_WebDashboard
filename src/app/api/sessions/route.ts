@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createSupabaseFromCredentials } from '@/lib/supabase'
 
 // Create a new conversation session
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    let supabase
-    try {
-      supabase = createServerSupabase()
-    } catch {
+    const { supabase_url, supabase_key, console_token } = body
+    
+    if (!supabase_url || !supabase_key) {
       return NextResponse.json(
-        { success: false, error: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.' },
-        { status: 500 }
+        { success: false, error: 'Missing supabase_url or supabase_key in request body' },
+        { status: 400 }
       )
+    }
+    
+    const supabase = createSupabaseFromCredentials(supabase_url, supabase_key)
+    
+    // Store console_token in metadata for realtime filtering
+    const metadata = {
+      ...(body.metadata ?? {}),
+      console_token: console_token ?? null
     }
     
     const { data, error } = await supabase
@@ -21,7 +28,7 @@ export async function POST(request: NextRequest) {
       .insert({
         wake_word_model: body.wake_word_model ?? null,
         user_id: body.user_id ?? 'default',
-        metadata: body.metadata ?? {}
+        metadata
       })
       .select()
       .single()
@@ -45,17 +52,19 @@ export async function POST(request: NextRequest) {
 }
 
 // Get all sessions
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    let supabase
-    try {
-      supabase = createServerSupabase()
-    } catch {
+    const url = request.nextUrl.searchParams.get('supabase_url')
+    const key = request.nextUrl.searchParams.get('supabase_key')
+    
+    if (!url || !key) {
       return NextResponse.json(
-        { success: false, error: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.' },
-        { status: 500 }
+        { success: false, error: 'Missing supabase_url or supabase_key query parameters' },
+        { status: 400 }
       )
     }
+    
+    const supabase = createSupabaseFromCredentials(url, key)
     
     const { data, error } = await supabase
       .from('conversation_sessions')

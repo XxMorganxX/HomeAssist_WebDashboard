@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, isConfigured } from '@/lib/supabase'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { Activity, Play, Square, Trash2, Filter, MessageSquare, Wrench, Radio, Key } from 'lucide-react'
 import type { RealtimeEvent } from '@/types/database'
@@ -13,17 +13,19 @@ export function RealtimeMonitor() {
   const [isListening, setIsListening] = useState(false)
   const [selectedTables, setSelectedTables] = useState<string[]>(MONITORED_TABLES)
   const [filterType, setFilterType] = useState<string>('all')
-  const [token, setToken] = useState<string | null>(null)
+  const [configured, setConfigured] = useState(false)
+  const [consoleToken, setConsoleToken] = useState<string | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
   const eventsEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('dashboard_token')
-    setToken(savedToken)
+    setConfigured(isConfigured())
+    const token = localStorage.getItem('console_token')
+    setConsoleToken(token)
   }, [])
 
   const startListening = () => {
-    if (selectedTables.length === 0 || !token) return
+    if (selectedTables.length === 0 || !configured) return
 
     const supabase = getSupabase()
     const channel = supabase.channel('realtime-monitor')
@@ -33,18 +35,17 @@ export function RealtimeMonitor() {
         'postgres_changes',
         { event: '*', schema: 'public', table },
         (payload) => {
-          // Filter events by token (user_id)
           const newData = payload.new as Record<string, unknown> | undefined
           const oldData = payload.old as Record<string, unknown> | undefined
+          const metadata = (newData?.metadata || oldData?.metadata) as Record<string, unknown> | undefined
           
-          // For sessions, check user_id directly
-          if (table === 'conversation_sessions') {
-            const userId = newData?.user_id || oldData?.user_id
-            if (userId !== token) return
+          // Filter by console_token if set
+          if (consoleToken) {
+            const eventToken = metadata?.console_token as string | undefined
+            if (eventToken !== consoleToken) {
+              return // Skip events that don't match our token
+            }
           }
-          
-          // For messages and tool_calls, we show all (they're linked via session)
-          // In a production app, you'd join to check the session's user_id
           
           const event: RealtimeEvent = {
             id: `${Date.now()}-${Math.random()}`,
@@ -166,7 +167,7 @@ export function RealtimeMonitor() {
           )}
           <span className="preview-id">
             {endedAt ? 'Session ended' : 'Session started'}
-            {userId && ` • User: ${userId.slice(0, 8)}...`}
+            {userId && ` • User: ${userId}`}
           </span>
         </div>
       )
@@ -197,14 +198,13 @@ export function RealtimeMonitor() {
     return null
   }
 
-  // No token configured
-  if (!token) {
+  if (!configured) {
     return (
       <div className="realtime-monitor">
-        <div className="no-token-state">
-          <Key size={48} />
-          <h2>No Token Configured</h2>
-          <p>Go to Settings and enter your viewing token to monitor events.</p>
+        <div className="error-state">
+          <div className="error-icon">⚠️</div>
+          <h2>Not Configured</h2>
+          <p>Please add your Supabase credentials in Settings to monitor realtime events.</p>
         </div>
       </div>
     )
@@ -246,6 +246,23 @@ export function RealtimeMonitor() {
 
       <div className="monitor-body">
         <div className="monitor-sidebar">
+          {/* Console Token Display */}
+          <div className="sidebar-section">
+            <h4>
+              <Key size={14} />
+              Console Token
+            </h4>
+            {consoleToken ? (
+              <div className="token-display">
+                {consoleToken.slice(0, 16)}...
+              </div>
+            ) : (
+              <div className="token-warning">
+                No token set - showing all events
+              </div>
+            )}
+          </div>
+
           <div className="sidebar-section">
             <h4>Monitor Tables</h4>
             <div className="table-checkboxes">
@@ -306,29 +323,6 @@ export function RealtimeMonitor() {
               </strong>
             </div>
           </div>
-
-          <div className="sidebar-section stats">
-            <h4>By Table</h4>
-            <div className="stat-item">
-              <span>Sessions</span>
-              <strong>{events.filter(e => e.table === 'conversation_sessions').length}</strong>
-            </div>
-            <div className="stat-item">
-              <span>Messages</span>
-              <strong>{events.filter(e => e.table === 'conversation_messages').length}</strong>
-            </div>
-            <div className="stat-item">
-              <span>Tool Calls</span>
-              <strong>{events.filter(e => e.table === 'tool_calls').length}</strong>
-            </div>
-          </div>
-
-          <div className="sidebar-section">
-            <h4>Token</h4>
-            <div className="token-display">
-              {token.slice(0, 12)}...
-            </div>
-          </div>
         </div>
 
         <div className="events-panel">
@@ -338,7 +332,11 @@ export function RealtimeMonitor() {
                 <>
                   <Activity size={32} className="pulse" />
                   <p>Waiting for events...</p>
-                  <span>Database changes will appear here in real-time</span>
+                  <span>
+                    {consoleToken 
+                      ? `Filtering by token: ${consoleToken.slice(0, 8)}...`
+                      : 'Showing all database changes'}
+                  </span>
                 </>
               ) : (
                 <>

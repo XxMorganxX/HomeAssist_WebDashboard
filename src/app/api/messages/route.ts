@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createSupabaseFromCredentials } from '@/lib/supabase'
 
 // Add a message to a session
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    
+    const { supabase_url, supabase_key, console_token } = body
+    
+    if (!supabase_url || !supabase_key) {
+      return NextResponse.json(
+        { success: false, error: 'Missing supabase_url or supabase_key in request body' },
+        { status: 400 }
+      )
+    }
     
     if (!body.session_id || !body.role || !body.content) {
       return NextResponse.json(
@@ -13,7 +22,13 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const supabase = createServerSupabase()
+    const supabase = createSupabaseFromCredentials(supabase_url, supabase_key)
+    
+    // Store console_token in metadata for realtime filtering
+    const metadata = {
+      ...(body.metadata ?? {}),
+      console_token: console_token ?? null
+    }
     
     const { data, error } = await supabase
       .from('conversation_messages')
@@ -23,7 +38,7 @@ export async function POST(request: NextRequest) {
         content: body.content,
         is_final: body.is_final ?? true,
         confidence: body.confidence ?? null,
-        metadata: body.metadata ?? {}
+        metadata
       })
       .select()
       .single()
@@ -44,4 +59,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, isConfigured } from '@/lib/supabase'
 import { 
   MessageSquare, 
   User, 
@@ -14,8 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   Settings2,
-  Mic,
-  Key
+  Mic
 } from 'lucide-react'
 import type { ConversationSession, ConversationMessage, ToolCall } from '@/types/database'
 
@@ -32,15 +31,13 @@ export function ConversationViewer() {
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedTools, setExpandedTools] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
-  const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('dashboard_token')
-    setToken(savedToken)
-    if (savedToken) {
-      fetchSessions(savedToken)
+    if (isConfigured()) {
+      fetchSessions()
     } else {
       setLoading(false)
+      setError('Supabase not configured. Please add your credentials in Settings.')
     }
   }, [])
 
@@ -50,7 +47,7 @@ export function ConversationViewer() {
     }
   }, [selectedSession])
 
-  const fetchSessions = async (userToken: string) => {
+  const fetchSessions = async () => {
     setLoading(true)
     setError(null)
     
@@ -59,7 +56,6 @@ export function ConversationViewer() {
       const { data, error: fetchError } = await supabase
         .from('conversation_sessions')
         .select('*')
-        .eq('user_id', userToken)
         .order('started_at', { ascending: false })
         .limit(100)
 
@@ -139,9 +135,7 @@ export function ConversationViewer() {
   }
 
   const handleRefresh = () => {
-    if (token) {
-      fetchSessions(token)
-    }
+    fetchSessions()
   }
 
   const toggleToolExpanded = (toolId: number) => {
@@ -294,20 +288,6 @@ export function ConversationViewer() {
     return null
   }
 
-  // No token configured
-  if (!token) {
-    return (
-      <div className="conversation-viewer">
-        <div className="no-token-state">
-          <Key size={48} />
-          <h2>No Token Configured</h2>
-          <p>Go to Settings and enter your viewing token to see conversations.</p>
-          <p className="help-text">Use the same token in your chatbot's API calls.</p>
-        </div>
-      </div>
-    )
-  }
-
   if (error) {
     return (
       <div className="conversation-viewer">
@@ -356,7 +336,6 @@ export function ConversationViewer() {
             <div className="empty-conversations">
               <MessageSquare size={24} />
               <span>No sessions found</span>
-              <span className="help-text">Sessions with token "{token.slice(0, 8)}..." will appear here</span>
             </div>
           ) : (
             filteredSessions.map((session) => (
@@ -374,7 +353,7 @@ export function ConversationViewer() {
                     )}
                   </span>
                   <span className="conversation-preview">
-                    {getSessionPreview(session) || `Started ${formatDate(session.started_at)}`}
+                    {getSessionPreview(session) || `User: ${session.user_id}`}
                   </span>
                   <div className="session-meta-row">
                     <span className={`session-status ${session.ended_at ? 'ended' : 'active'}`}>

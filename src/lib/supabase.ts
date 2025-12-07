@@ -47,14 +47,7 @@ export const isConfigured = (): boolean => {
   return Boolean(url && key && url !== '' && key !== '')
 }
 
-// Server-side Supabase client (for API routes)
-export const createServerSupabase = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!url || !key) {
-    throw new Error('Missing Supabase environment variables')
-  }
-  
+// Create a Supabase client from provided credentials (for API routes)
+export const createSupabaseFromCredentials = (url: string, key: string): SupabaseClient => {
   return createClient(url, key)
 }

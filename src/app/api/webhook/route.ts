@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createSupabaseFromCredentials } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Log the incoming webhook data
     console.log('Webhook received:', JSON.stringify(body, null, 2))
     
-    // Example: If the webhook contains a message, save it to Supabase
-    if (body.session_id && body.role && body.content) {
-      const supabase = createServerSupabase()
+    // If Supabase credentials and message data provided, save to database
+    if (body.supabase_url && body.supabase_key && body.session_id && body.role && body.content) {
+      const supabase = createSupabaseFromCredentials(body.supabase_url, body.supabase_key)
       
       const { data, error } = await supabase
         .from('conversation_messages')
@@ -58,4 +57,3 @@ export async function GET() {
     timestamp: new Date().toISOString()
   })
 }
-

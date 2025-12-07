@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { ConversationViewer } from '@/components/ConversationViewer'
 import { RealtimeMonitor } from '@/components/RealtimeMonitor'
 import { Settings } from '@/components/Settings'
+import { isConfigured } from '@/lib/supabase'
 
 export default function Home() {
   const [activeView, setActiveView] = useState('conversations')
@@ -12,8 +13,7 @@ export default function Home() {
   const [key, setKey] = useState(0)
 
   const checkConfiguration = useCallback(() => {
-    const token = localStorage.getItem('dashboard_token')
-    const isReady = Boolean(token)
+    const isReady = isConfigured()
     setConfigured(isReady)
     if (!isReady) {
       setActiveView('settings')
@@ -27,8 +27,7 @@ export default function Home() {
   const handleConnectionChange = () => {
     checkConfiguration()
     setKey(prev => prev + 1)
-    const token = localStorage.getItem('dashboard_token')
-    if (token) {
+    if (isConfigured()) {
       setActiveView('conversations')
     }
   }
