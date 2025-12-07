@@ -1,0 +1,10 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/messages/route": "/api/messages",
+  "/api/sessions/[id]/end/route": "/api/sessions/[id]/end",
+  "/api/sessions/route": "/api/sessions",
+  "/api/tool-calls/route": "/api/tool-calls",
+  "/api/webhook/route": "/api/webhook",
+  "/page": "/"
+}

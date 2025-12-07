@@ -1,0 +1,3 @@
+{
+  "/api/tool-calls/route": "app/api/tool-calls/route.js"
+}
