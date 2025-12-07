@@ -1,16 +1,16 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Terminal, Trash2, Play, Square, CheckCircle, XCircle } from 'lucide-react'
+import { Terminal, Trash2, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 import type { ConsoleLog } from '@/types/database'
 
 const POLL_INTERVAL = 1000 // Poll every second
 
 export function Console() {
   const [logs, setLogs] = useState<ConsoleLog[]>([])
-  const [isListening, setIsListening] = useState(false)
   const [token, setToken] = useState<string | null>(null)
   const [lastTimestamp, setLastTimestamp] = useState<string | null>(null)
+  const [isPolling, setIsPolling] = useState(false)
   const logsEndRef = useRef<HTMLDivElement>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -55,23 +55,25 @@ export function Console() {
     }
   }
 
-  const startListening = () => {
+  // Auto-start polling when token is available
+  useEffect(() => {
     if (!token) return
-    
-    setIsListening(true)
+
+    setIsPolling(true)
     fetchLogs() // Fetch immediately
     
     // Start polling
     pollIntervalRef.current = setInterval(fetchLogs, POLL_INTERVAL)
-  }
 
-  const stopListening = () => {
-    setIsListening(false)
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current)
-      pollIntervalRef.current = null
+    return () => {
+      // Cleanup on unmount or token change
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+      setIsPolling(false)
     }
-  }
+  }, [token])
 
   const clearLogs = async () => {
     if (!token) return
@@ -84,15 +86,6 @@ export function Console() {
       console.error('Failed to clear logs:', err)
     }
   }
-
-  useEffect(() => {
-    return () => {
-      // Cleanup on unmount
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-      }
-    }
-  }, [])
 
   // No token configured
   if (!token) {
@@ -111,25 +104,17 @@ export function Console() {
     <div className="console-container">
       <div className="console-header">
         <div className="console-title">
-          <Terminal size={20} className={isListening ? 'pulse' : ''} />
+          <Terminal size={20} />
           <h2>Console</h2>
-          {isListening && <span className="live-badge">LIVE</span>}
+          <span className="live-badge">
+            <RefreshCw size={12} className={isPolling ? 'spinning' : ''} />
+            LIVE
+          </span>
         </div>
         <div className="console-meta">
           <span className="token-badge">Token: {token.slice(0, 12)}...</span>
         </div>
         <div className="console-actions">
-          {!isListening ? (
-            <button className="action-btn start" onClick={startListening}>
-              <Play size={16} />
-              Start
-            </button>
-          ) : (
-            <button className="action-btn stop" onClick={stopListening}>
-              <Square size={16} />
-              Stop
-            </button>
-          )}
           <button
             className="icon-btn"
             onClick={clearLogs}
@@ -144,19 +129,9 @@ export function Console() {
       <div className="console-body">
         {logs.length === 0 ? (
           <div className="console-empty-logs">
-            {isListening ? (
-              <>
-                <Terminal size={32} className="pulse" />
-                <p>Waiting for logs...</p>
-                <span>POST to /api/console/log with your token</span>
-              </>
-            ) : (
-              <>
-                <Terminal size={32} />
-                <p>No logs yet</p>
-                <span>Click "Start" to begin listening for logs</span>
-              </>
-            )}
+            <Terminal size={32} className="pulse" />
+            <p>Waiting for logs...</p>
+            <span>POST to /api/console/log with token: {token.slice(0, 8)}...</span>
           </div>
         ) : (
           <div className="console-logs">
@@ -189,4 +164,3 @@ export function Console() {
     </div>
   )
 }
-

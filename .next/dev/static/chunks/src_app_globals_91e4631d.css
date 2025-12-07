@@ -1033,13 +1033,15 @@ body {
 }
 
 .live-badge {
-  background: var(--error);
+  background: var(--success);
   color: #fff;
   border-radius: 20px;
+  align-items: center;
+  gap: 6px;
   padding: 4px 10px;
   font-size: 10px;
   font-weight: 700;
-  animation: 2s infinite pulse-badge;
+  display: flex;
 }
 
 @keyframes pulse-badge {
