@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { ConversationViewer } from '@/components/ConversationViewer'
 import { Console } from '@/components/Console'
+import { Usage } from '@/components/Usage'
 import { Settings } from '@/components/Settings'
 import { isConfigured } from '@/lib/supabase'
 
@@ -31,6 +32,8 @@ export default function Home() {
         return <ConversationViewer key={key} />
       case 'console':
         return <Console key={key} />
+      case 'usage':
+        return <Usage key={key} />
       case 'settings':
         return <Settings onConnectionChange={handleConnectionChange} />
       default:

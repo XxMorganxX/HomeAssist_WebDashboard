@@ -1,4 +1,4 @@
-import { MessageSquare, Terminal, Settings, Zap } from 'lucide-react'
+import { MessageSquare, Terminal, Settings, Zap, BarChart3 } from 'lucide-react'
 
 interface SidebarProps {
   activeView: string
@@ -32,6 +32,13 @@ export function Sidebar({ activeView, onViewChange, isConfigured = false }: Side
           >
             <Terminal size={18} />
             <span>Console</span>
+          </button>
+          <button
+            className={`nav-item ${activeView === 'usage' ? 'active' : ''}`}
+            onClick={() => onViewChange('usage')}
+          >
+            <BarChart3 size={18} />
+            <span>Usage</span>
           </button>
           <button
             className={`nav-item ${activeView === 'settings' ? 'active' : ''}`}

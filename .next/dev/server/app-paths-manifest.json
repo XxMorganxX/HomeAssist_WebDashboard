@@ -1,3 +1,4 @@
 {
+  "/api/console/log/route": "app/api/console/log/route.js",
   "/page": "app/page.js"
 }
