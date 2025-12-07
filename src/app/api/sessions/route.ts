@@ -5,7 +5,16 @@ import { createServerSupabase } from '@/lib/supabase'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const supabase = createServerSupabase()
+    
+    let supabase
+    try {
+      supabase = createServerSupabase()
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.' },
+        { status: 500 }
+      )
+    }
     
     const { data, error } = await supabase
       .from('conversation_sessions')
@@ -27,8 +36,9 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Session creation error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to create session'
     return NextResponse.json(
-      { success: false, error: 'Failed to create session' },
+      { success: false, error: message },
       { status: 400 }
     )
   }
@@ -37,7 +47,15 @@ export async function POST(request: NextRequest) {
 // Get all sessions
 export async function GET() {
   try {
-    const supabase = createServerSupabase()
+    let supabase
+    try {
+      supabase = createServerSupabase()
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.' },
+        { status: 500 }
+      )
+    }
     
     const { data, error } = await supabase
       .from('conversation_sessions')
@@ -59,4 +77,3 @@ export async function GET() {
     )
   }
 }
-

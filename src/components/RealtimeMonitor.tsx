@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { RealtimeChannel } from '@supabase/supabase-js'
-import { Activity, Play, Square, Trash2, Filter, MessageSquare, Wrench, Radio } from 'lucide-react'
+import { Activity, Play, Square, Trash2, Filter, MessageSquare, Wrench, Radio, Key } from 'lucide-react'
 import type { RealtimeEvent } from '@/types/database'
 
 const MONITORED_TABLES = ['conversation_sessions', 'conversation_messages', 'tool_calls']
@@ -13,11 +13,17 @@ export function RealtimeMonitor() {
   const [isListening, setIsListening] = useState(false)
   const [selectedTables, setSelectedTables] = useState<string[]>(MONITORED_TABLES)
   const [filterType, setFilterType] = useState<string>('all')
+  const [token, setToken] = useState<string | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
   const eventsEndRef = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    const savedToken = localStorage.getItem('dashboard_token')
+    setToken(savedToken)
+  }, [])
+
   const startListening = () => {
-    if (selectedTables.length === 0) return
+    if (selectedTables.length === 0 || !token) return
 
     const supabase = getSupabase()
     const channel = supabase.channel('realtime-monitor')
@@ -27,6 +33,19 @@ export function RealtimeMonitor() {
         'postgres_changes',
         { event: '*', schema: 'public', table },
         (payload) => {
+          // Filter events by token (user_id)
+          const newData = payload.new as Record<string, unknown> | undefined
+          const oldData = payload.old as Record<string, unknown> | undefined
+          
+          // For sessions, check user_id directly
+          if (table === 'conversation_sessions') {
+            const userId = newData?.user_id || oldData?.user_id
+            if (userId !== token) return
+          }
+          
+          // For messages and tool_calls, we show all (they're linked via session)
+          // In a production app, you'd join to check the session's user_id
+          
           const event: RealtimeEvent = {
             id: `${Date.now()}-${Math.random()}`,
             timestamp: new Date(),
@@ -147,7 +166,7 @@ export function RealtimeMonitor() {
           )}
           <span className="preview-id">
             {endedAt ? 'Session ended' : 'Session started'}
-            {userId && ` • User: ${userId}`}
+            {userId && ` • User: ${userId.slice(0, 8)}...`}
           </span>
         </div>
       )
@@ -176,6 +195,19 @@ export function RealtimeMonitor() {
     }
 
     return null
+  }
+
+  // No token configured
+  if (!token) {
+    return (
+      <div className="realtime-monitor">
+        <div className="no-token-state">
+          <Key size={48} />
+          <h2>No Token Configured</h2>
+          <p>Go to Settings and enter your viewing token to monitor events.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -288,6 +320,13 @@ export function RealtimeMonitor() {
             <div className="stat-item">
               <span>Tool Calls</span>
               <strong>{events.filter(e => e.table === 'tool_calls').length}</strong>
+            </div>
+          </div>
+
+          <div className="sidebar-section">
+            <h4>Token</h4>
+            <div className="token-display">
+              {token.slice(0, 12)}...
             </div>
           </div>
         </div>

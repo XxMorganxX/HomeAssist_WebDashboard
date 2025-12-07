@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   Settings2,
-  Mic
+  Mic,
+  Key
 } from 'lucide-react'
 import type { ConversationSession, ConversationMessage, ToolCall } from '@/types/database'
 
@@ -31,9 +32,16 @@ export function ConversationViewer() {
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedTools, setExpandedTools] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchSessions()
+    const savedToken = localStorage.getItem('dashboard_token')
+    setToken(savedToken)
+    if (savedToken) {
+      fetchSessions(savedToken)
+    } else {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -42,23 +50,16 @@ export function ConversationViewer() {
     }
   }, [selectedSession])
 
-  const fetchSessions = async () => {
+  const fetchSessions = async (userToken: string) => {
     setLoading(true)
     setError(null)
-    
-    // Check if Supabase is configured
-    const { isConfigured } = await import('@/lib/supabase')
-    if (!isConfigured()) {
-      setError('Supabase not configured. Please add your credentials in Settings.')
-      setLoading(false)
-      return
-    }
     
     try {
       const supabase = getSupabase()
       const { data, error: fetchError } = await supabase
         .from('conversation_sessions')
         .select('*')
+        .eq('user_id', userToken)
         .order('started_at', { ascending: false })
         .limit(100)
 
@@ -71,7 +72,6 @@ export function ConversationViewer() {
       
       setSessions(data || [])
       
-      // Auto-select first session
       if (data && data.length > 0 && !selectedSession) {
         setSelectedSession(data[0].id)
       }
@@ -88,7 +88,6 @@ export function ConversationViewer() {
     try {
       const supabase = getSupabase()
       
-      // Fetch messages
       const { data: messagesData, error: messagesError } = await supabase
         .from('conversation_messages')
         .select('*')
@@ -102,7 +101,6 @@ export function ConversationViewer() {
         return
       }
 
-      // Get message IDs for assistant messages to fetch tool calls
       const assistantMessageIds = messagesData
         .filter(m => m.role === 'assistant')
         .map(m => m.id)
@@ -119,7 +117,6 @@ export function ConversationViewer() {
         if (toolCallsError) {
           console.error('Failed to fetch tool calls:', toolCallsError)
         } else if (toolCallsData) {
-          // Group tool calls by message_id
           toolCallsMap = toolCallsData.reduce((acc, tc) => {
             if (!acc[tc.message_id]) acc[tc.message_id] = []
             acc[tc.message_id].push(tc)
@@ -128,7 +125,6 @@ export function ConversationViewer() {
         }
       }
 
-      // Combine messages with their tool calls
       const messagesWithTools: MessageWithTools[] = messagesData.map(msg => ({
         ...msg,
         tool_calls: toolCallsMap[msg.id] || []
@@ -139,6 +135,12 @@ export function ConversationViewer() {
       console.error('Failed to fetch messages:', err)
     } finally {
       setMessagesLoading(false)
+    }
+  }
+
+  const handleRefresh = () => {
+    if (token) {
+      fetchSessions(token)
     }
   }
 
@@ -283,7 +285,6 @@ export function ConversationViewer() {
   }
 
   const getSessionPreview = (session: ConversationSession) => {
-    // Find the first user message in this session from our current messages
     if (selectedSession === session.id && messages.length > 0) {
       const firstUserMsg = messages.find(m => m.role === 'user')
       if (firstUserMsg) {
@@ -293,6 +294,20 @@ export function ConversationViewer() {
     return null
   }
 
+  // No token configured
+  if (!token) {
+    return (
+      <div className="conversation-viewer">
+        <div className="no-token-state">
+          <Key size={48} />
+          <h2>No Token Configured</h2>
+          <p>Go to Settings and enter your viewing token to see conversations.</p>
+          <p className="help-text">Use the same token in your chatbot's API calls.</p>
+        </div>
+      </div>
+    )
+  }
+
   if (error) {
     return (
       <div className="conversation-viewer">
@@ -300,7 +315,7 @@ export function ConversationViewer() {
           <div className="error-icon">⚠️</div>
           <h2>Connection Error</h2>
           <p>{error}</p>
-          <button className="retry-btn" onClick={fetchSessions}>
+          <button className="retry-btn" onClick={handleRefresh}>
             <RefreshCw size={16} />
             Retry
           </button>
@@ -317,7 +332,7 @@ export function ConversationViewer() {
             <MessageSquare size={18} />
             Sessions
           </h3>
-          <button className="icon-btn" onClick={fetchSessions} title="Refresh">
+          <button className="icon-btn" onClick={handleRefresh} title="Refresh">
             <RefreshCw size={16} className={loading ? 'spinning' : ''} />
           </button>
         </div>
@@ -341,6 +356,7 @@ export function ConversationViewer() {
             <div className="empty-conversations">
               <MessageSquare size={24} />
               <span>No sessions found</span>
+              <span className="help-text">Sessions with token "{token.slice(0, 8)}..." will appear here</span>
             </div>
           ) : (
             filteredSessions.map((session) => (
@@ -358,7 +374,7 @@ export function ConversationViewer() {
                     )}
                   </span>
                   <span className="conversation-preview">
-                    {getSessionPreview(session) || `User: ${session.user_id}`}
+                    {getSessionPreview(session) || `Started ${formatDate(session.started_at)}`}
                   </span>
                   <div className="session-meta-row">
                     <span className={`session-status ${session.ended_at ? 'ended' : 'active'}`}>

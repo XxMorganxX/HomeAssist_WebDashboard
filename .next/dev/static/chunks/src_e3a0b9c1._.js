@@ -274,6 +274,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$up$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronUp$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chevron-up.js [app-client] (ecmascript) <export default as ChevronUp>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/settings-2.js [app-client] (ecmascript) <export default as Settings2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$mic$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Mic$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/mic.js [app-client] (ecmascript) <export default as Mic>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$key$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Key$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/key.js [app-client] (ecmascript) <export default as Key>");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
@@ -290,9 +291,16 @@ function ConversationViewer() {
     const [searchTerm, setSearchTerm] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
     const [expandedTools, setExpandedTools] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(new Set());
     const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [token, setToken] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "ConversationViewer.useEffect": ()=>{
-            fetchSessions();
+            const savedToken = localStorage.getItem('dashboard_token');
+            setToken(savedToken);
+            if (savedToken) {
+                fetchSessions(savedToken);
+            } else {
+                setLoading(false);
+            }
         }
     }["ConversationViewer.useEffect"], []);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
@@ -304,19 +312,12 @@ function ConversationViewer() {
     }["ConversationViewer.useEffect"], [
         selectedSession
     ]);
-    const fetchSessions = async ()=>{
+    const fetchSessions = async (userToken)=>{
         setLoading(true);
         setError(null);
-        // Check if Supabase is configured
-        const { isConfigured } = await __turbopack_context__.A("[project]/src/lib/supabase.ts [app-client] (ecmascript, async loader)");
-        if (!isConfigured()) {
-            setError('Supabase not configured. Please add your credentials in Settings.');
-            setLoading(false);
-            return;
-        }
         try {
             const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getSupabase"])();
-            const { data, error: fetchError } = await supabase.from('conversation_sessions').select('*').order('started_at', {
+            const { data, error: fetchError } = await supabase.from('conversation_sessions').select('*').eq('user_id', userToken).order('started_at', {
                 ascending: false
             }).limit(100);
             if (fetchError) {
@@ -326,7 +327,6 @@ function ConversationViewer() {
                 return;
             }
             setSessions(data || []);
-            // Auto-select first session
             if (data && data.length > 0 && !selectedSession) {
                 setSelectedSession(data[0].id);
             }
@@ -341,7 +341,6 @@ function ConversationViewer() {
         setMessagesLoading(true);
         try {
             const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getSupabase"])();
-            // Fetch messages
             const { data: messagesData, error: messagesError } = await supabase.from('conversation_messages').select('*').eq('session_id', sessionId).order('timestamp', {
                 ascending: true
             });
@@ -350,7 +349,6 @@ function ConversationViewer() {
                 setMessages([]);
                 return;
             }
-            // Get message IDs for assistant messages to fetch tool calls
             const assistantMessageIds = messagesData.filter((m)=>m.role === 'assistant').map((m)=>m.id);
             let toolCallsMap = {};
             if (assistantMessageIds.length > 0) {
@@ -360,7 +358,6 @@ function ConversationViewer() {
                 if (toolCallsError) {
                     console.error('Failed to fetch tool calls:', toolCallsError);
                 } else if (toolCallsData) {
-                    // Group tool calls by message_id
                     toolCallsMap = toolCallsData.reduce((acc, tc)=>{
                         if (!acc[tc.message_id]) acc[tc.message_id] = [];
                         acc[tc.message_id].push(tc);
@@ -368,7 +365,6 @@ function ConversationViewer() {
                     }, {});
                 }
             }
-            // Combine messages with their tool calls
             const messagesWithTools = messagesData.map((msg)=>({
                     ...msg,
                     tool_calls: toolCallsMap[msg.id] || []
@@ -378,6 +374,11 @@ function ConversationViewer() {
             console.error('Failed to fetch messages:', err);
         } finally{
             setMessagesLoading(false);
+        }
+    };
+    const handleRefresh = ()=>{
+        if (token) {
+            fetchSessions(token);
         }
     };
     const toggleToolExpanded = (toolId)=>{
@@ -434,7 +435,7 @@ function ConversationViewer() {
                                     size: 14
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 202,
+                                    lineNumber: 204,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -442,7 +443,7 @@ function ConversationViewer() {
                                     children: toolCall.tool_name
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 203,
+                                    lineNumber: 205,
                                     columnNumber: 13
                                 }, this),
                                 toolCall.duration_ms && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -453,32 +454,32 @@ function ConversationViewer() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 205,
+                                    lineNumber: 207,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 201,
+                            lineNumber: 203,
                             columnNumber: 11
                         }, this),
                         isExpanded ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$up$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronUp$3e$__["ChevronUp"], {
                             size: 14
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 208,
+                            lineNumber: 210,
                             columnNumber: 25
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
                             size: 14
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 208,
+                            lineNumber: 210,
                             columnNumber: 51
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                    lineNumber: 197,
+                    lineNumber: 199,
                     columnNumber: 9
                 }, this),
                 isExpanded && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -492,7 +493,7 @@ function ConversationViewer() {
                                     children: "Arguments"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 214,
+                                    lineNumber: 216,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
@@ -500,13 +501,13 @@ function ConversationViewer() {
                                     children: JSON.stringify(toolCall.arguments, null, 2)
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 215,
+                                    lineNumber: 217,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 213,
+                            lineNumber: 215,
                             columnNumber: 13
                         }, this),
                         toolCall.result && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -517,7 +518,7 @@ function ConversationViewer() {
                                     children: "Result"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 221,
+                                    lineNumber: 223,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
@@ -525,13 +526,13 @@ function ConversationViewer() {
                                     children: toolCall.result
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 222,
+                                    lineNumber: 224,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 220,
+                            lineNumber: 222,
                             columnNumber: 15
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -543,24 +544,24 @@ function ConversationViewer() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                lineNumber: 226,
+                                lineNumber: 228,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 225,
+                            lineNumber: 227,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                    lineNumber: 212,
+                    lineNumber: 214,
                     columnNumber: 11
                 }, this)
             ]
         }, toolCall.id, true, {
             fileName: "[project]/src/components/ConversationViewer.tsx",
-            lineNumber: 196,
+            lineNumber: 198,
             columnNumber: 7
         }, this);
     };
@@ -578,27 +579,27 @@ function ConversationViewer() {
                             size: 18
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 242,
+                            lineNumber: 244,
                             columnNumber: 22
                         }, this),
                         isAssistant && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bot$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Bot$3e$__["Bot"], {
                             size: 18
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 243,
+                            lineNumber: 245,
                             columnNumber: 27
                         }, this),
                         isSystem && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings2$3e$__["Settings2"], {
                             size: 18
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 244,
+                            lineNumber: 246,
                             columnNumber: 24
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                    lineNumber: 241,
+                    lineNumber: 243,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -616,7 +617,7 @@ function ConversationViewer() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 249,
+                                    lineNumber: 251,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -624,7 +625,7 @@ function ConversationViewer() {
                                     children: new Date(message.timestamp).toLocaleTimeString()
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 254,
+                                    lineNumber: 256,
                                     columnNumber: 13
                                 }, this),
                                 message.confidence !== null && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -635,7 +636,7 @@ function ConversationViewer() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 258,
+                                    lineNumber: 260,
                                     columnNumber: 15
                                 }, this),
                                 !message.is_final && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -643,13 +644,13 @@ function ConversationViewer() {
                                     children: "interim"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 263,
+                                    lineNumber: 265,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 248,
+                            lineNumber: 250,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -657,7 +658,7 @@ function ConversationViewer() {
                             children: message.content
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 267,
+                            lineNumber: 269,
                             columnNumber: 11
                         }, this),
                         message.tool_calls && message.tool_calls.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -670,7 +671,7 @@ function ConversationViewer() {
                                             size: 14
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                                            lineNumber: 274,
+                                            lineNumber: 276,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -681,37 +682,36 @@ function ConversationViewer() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                                            lineNumber: 275,
+                                            lineNumber: 277,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 273,
+                                    lineNumber: 275,
                                     columnNumber: 15
                                 }, this),
                                 message.tool_calls.map((tc)=>renderToolCall(tc))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 272,
+                            lineNumber: 274,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                    lineNumber: 247,
+                    lineNumber: 249,
                     columnNumber: 9
                 }, this)
             ]
         }, message.id, true, {
             fileName: "[project]/src/components/ConversationViewer.tsx",
-            lineNumber: 240,
+            lineNumber: 242,
             columnNumber: 7
         }, this);
     };
     const getSessionPreview = (session)=>{
-        // Find the first user message in this session from our current messages
         if (selectedSession === session.id && messages.length > 0) {
             const firstUserMsg = messages.find((m)=>m.role === 'user');
             if (firstUserMsg) {
@@ -720,6 +720,54 @@ function ConversationViewer() {
         }
         return null;
     };
+    // No token configured
+    if (!token) {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            className: "conversation-viewer",
+            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "no-token-state",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$key$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Key$3e$__["Key"], {
+                        size: 48
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/ConversationViewer.tsx",
+                        lineNumber: 302,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                        children: "No Token Configured"
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/ConversationViewer.tsx",
+                        lineNumber: 303,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                        children: "Go to Settings and enter your viewing token to see conversations."
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/ConversationViewer.tsx",
+                        lineNumber: 304,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                        className: "help-text",
+                        children: "Use the same token in your chatbot's API calls."
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/ConversationViewer.tsx",
+                        lineNumber: 305,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/src/components/ConversationViewer.tsx",
+                lineNumber: 301,
+                columnNumber: 9
+            }, this)
+        }, void 0, false, {
+            fileName: "[project]/src/components/ConversationViewer.tsx",
+            lineNumber: 300,
+            columnNumber: 7
+        }, this);
+    }
     if (error) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "conversation-viewer",
@@ -731,50 +779,50 @@ function ConversationViewer() {
                         children: "⚠️"
                     }, void 0, false, {
                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                        lineNumber: 300,
+                        lineNumber: 315,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                         children: "Connection Error"
                     }, void 0, false, {
                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                        lineNumber: 301,
+                        lineNumber: 316,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         children: error
                     }, void 0, false, {
                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                        lineNumber: 302,
+                        lineNumber: 317,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                         className: "retry-btn",
-                        onClick: fetchSessions,
+                        onClick: handleRefresh,
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
                                 size: 16
                             }, void 0, false, {
                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                lineNumber: 304,
+                                lineNumber: 319,
                                 columnNumber: 13
                             }, this),
                             "Retry"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                        lineNumber: 303,
+                        lineNumber: 318,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                lineNumber: 299,
+                lineNumber: 314,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/components/ConversationViewer.tsx",
-            lineNumber: 298,
+            lineNumber: 313,
             columnNumber: 7
         }, this);
     }
@@ -793,37 +841,37 @@ function ConversationViewer() {
                                         size: 18
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                                        lineNumber: 317,
+                                        lineNumber: 332,
                                         columnNumber: 13
                                     }, this),
                                     "Sessions"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                lineNumber: 316,
+                                lineNumber: 331,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 className: "icon-btn",
-                                onClick: fetchSessions,
+                                onClick: handleRefresh,
                                 title: "Refresh",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
                                     size: 16,
                                     className: loading ? 'spinning' : ''
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 321,
+                                    lineNumber: 336,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                lineNumber: 320,
+                                lineNumber: 335,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                        lineNumber: 315,
+                        lineNumber: 330,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -833,7 +881,7 @@ function ConversationViewer() {
                                 size: 14
                             }, void 0, false, {
                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                lineNumber: 326,
+                                lineNumber: 341,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -843,13 +891,13 @@ function ConversationViewer() {
                                 onChange: (e)=>setSearchTerm(e.target.value)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                lineNumber: 327,
+                                lineNumber: 342,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                        lineNumber: 325,
+                        lineNumber: 340,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -860,12 +908,12 @@ function ConversationViewer() {
                                 className: "spinner"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                lineNumber: 338,
+                                lineNumber: 353,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 337,
+                            lineNumber: 352,
                             columnNumber: 13
                         }, this) : filteredSessions.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "empty-conversations",
@@ -874,20 +922,32 @@ function ConversationViewer() {
                                     size: 24
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 342,
+                                    lineNumber: 357,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                     children: "No sessions found"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 343,
+                                    lineNumber: 358,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "help-text",
+                                    children: [
+                                        'Sessions with token "',
+                                        token.slice(0, 8),
+                                        '..." will appear here'
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/components/ConversationViewer.tsx",
+                                    lineNumber: 359,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 341,
+                            lineNumber: 356,
                             columnNumber: 13
                         }, this) : filteredSessions.map((session)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 className: `conversation-item ${selectedSession === session.id ? 'active' : ''}`,
@@ -904,7 +964,7 @@ function ConversationViewer() {
                                                             size: 12
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                                                            lineNumber: 355,
+                                                            lineNumber: 371,
                                                             columnNumber: 25
                                                         }, this),
                                                         " ",
@@ -913,15 +973,15 @@ function ConversationViewer() {
                                                 }, void 0, true) : `Session ${session.id.slice(0, 8)}...`
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                                lineNumber: 353,
+                                                lineNumber: 369,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 className: "conversation-preview",
-                                                children: getSessionPreview(session) || `User: ${session.user_id}`
+                                                children: getSessionPreview(session) || `Started ${formatDate(session.started_at)}`
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                                lineNumber: 360,
+                                                lineNumber: 376,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -932,7 +992,7 @@ function ConversationViewer() {
                                                         children: session.ended_at ? 'Ended' : 'Active'
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                                                        lineNumber: 364,
+                                                        lineNumber: 380,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -940,19 +1000,19 @@ function ConversationViewer() {
                                                         children: formatDuration(session)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                                                        lineNumber: 367,
+                                                        lineNumber: 383,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                                lineNumber: 363,
+                                                lineNumber: 379,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                                        lineNumber: 352,
+                                        lineNumber: 368,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -962,20 +1022,20 @@ function ConversationViewer() {
                                                 size: 12
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                                lineNumber: 371,
+                                                lineNumber: 387,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 children: formatDate(session.started_at)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                                lineNumber: 372,
+                                                lineNumber: 388,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                                        lineNumber: 370,
+                                        lineNumber: 386,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$right$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronRight$3e$__["ChevronRight"], {
@@ -983,24 +1043,24 @@ function ConversationViewer() {
                                         className: "conversation-arrow"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                                        lineNumber: 374,
+                                        lineNumber: 390,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, session.id, true, {
                                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                                lineNumber: 347,
+                                lineNumber: 363,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/src/components/ConversationViewer.tsx",
-                        lineNumber: 335,
+                        lineNumber: 350,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                lineNumber: 314,
+                lineNumber: 329,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1012,27 +1072,27 @@ function ConversationViewer() {
                             size: 48
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 384,
+                            lineNumber: 400,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                             children: "Select a Session"
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 385,
+                            lineNumber: 401,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                             children: "Choose a conversation session from the sidebar to view its messages"
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 386,
+                            lineNumber: 402,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                    lineNumber: 383,
+                    lineNumber: 399,
                     columnNumber: 11
                 }, this) : messagesLoading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "loading-state",
@@ -1041,20 +1101,20 @@ function ConversationViewer() {
                             className: "spinner"
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 390,
+                            lineNumber: 406,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                             children: "Loading messages..."
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 391,
+                            lineNumber: 407,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                    lineNumber: 389,
+                    lineNumber: 405,
                     columnNumber: 11
                 }, this) : messages.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "no-messages",
@@ -1063,20 +1123,20 @@ function ConversationViewer() {
                             size: 32
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 395,
+                            lineNumber: 411,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                             children: "No messages in this session"
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 396,
+                            lineNumber: 412,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                    lineNumber: 394,
+                    lineNumber: 410,
                     columnNumber: 11
                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "messages-container",
@@ -1091,7 +1151,7 @@ function ConversationViewer() {
                                             children: sessions.find((s)=>s.id === selectedSession)?.wake_word_model || `Session ${selectedSession.slice(0, 8)}...`
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                                            lineNumber: 402,
+                                            lineNumber: 418,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1099,13 +1159,13 @@ function ConversationViewer() {
                                             children: selectedSession
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                                            lineNumber: 406,
+                                            lineNumber: 422,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 401,
+                                    lineNumber: 417,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1119,7 +1179,7 @@ function ConversationViewer() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                                            lineNumber: 409,
+                                            lineNumber: 425,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1130,19 +1190,19 @@ function ConversationViewer() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                                            lineNumber: 410,
+                                            lineNumber: 426,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                                    lineNumber: 408,
+                                    lineNumber: 424,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 400,
+                            lineNumber: 416,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1150,28 +1210,28 @@ function ConversationViewer() {
                             children: messages.map(renderMessage)
                         }, void 0, false, {
                             fileName: "[project]/src/components/ConversationViewer.tsx",
-                            lineNumber: 415,
+                            lineNumber: 431,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ConversationViewer.tsx",
-                    lineNumber: 399,
+                    lineNumber: 415,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/ConversationViewer.tsx",
-                lineNumber: 381,
+                lineNumber: 397,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/ConversationViewer.tsx",
-        lineNumber: 313,
+        lineNumber: 328,
         columnNumber: 5
     }, this);
 }
-_s(ConversationViewer, "up1+BexLOgkI4ASuKbDW9VskNAA=");
+_s(ConversationViewer, "RJq+QLHT0+yE4mRU2H2nMgQeThE=");
 _c = ConversationViewer;
 var _c;
 __turbopack_context__.k.register(_c, "ConversationViewer");
@@ -1197,6 +1257,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$message$2d$square$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MessageSquare$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/message-square.js [app-client] (ecmascript) <export default as MessageSquare>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$wrench$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Wrench$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/wrench.js [app-client] (ecmascript) <export default as Wrench>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$radio$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Radio$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/radio.js [app-client] (ecmascript) <export default as Radio>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$key$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Key$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/key.js [app-client] (ecmascript) <export default as Key>");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
@@ -1214,10 +1275,17 @@ function RealtimeMonitor() {
     const [isListening, setIsListening] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [selectedTables, setSelectedTables] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(MONITORED_TABLES);
     const [filterType, setFilterType] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('all');
+    const [token, setToken] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const channelRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     const eventsEndRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "RealtimeMonitor.useEffect": ()=>{
+            const savedToken = localStorage.getItem('dashboard_token');
+            setToken(savedToken);
+        }
+    }["RealtimeMonitor.useEffect"], []);
     const startListening = ()=>{
-        if (selectedTables.length === 0) return;
+        if (selectedTables.length === 0 || !token) return;
         const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getSupabase"])();
         const channel = supabase.channel('realtime-monitor');
         selectedTables.forEach((table)=>{
@@ -1226,6 +1294,16 @@ function RealtimeMonitor() {
                 schema: 'public',
                 table
             }, (payload)=>{
+                // Filter events by token (user_id)
+                const newData = payload.new;
+                const oldData = payload.old;
+                // For sessions, check user_id directly
+                if (table === 'conversation_sessions') {
+                    const userId = newData?.user_id || oldData?.user_id;
+                    if (userId !== token) return;
+                }
+                // For messages and tool_calls, we show all (they're linked via session)
+                // In a production app, you'd join to check the session's user_id
                 const event = {
                     id: `${Date.now()}-${Math.random()}`,
                     timestamp: new Date(),
@@ -1301,28 +1379,28 @@ function RealtimeMonitor() {
             size: 14
         }, void 0, false, {
             fileName: "[project]/src/components/RealtimeMonitor.tsx",
-            lineNumber: 102,
+            lineNumber: 121,
             columnNumber: 51
         }, this);
         if (table === 'tool_calls') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$wrench$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Wrench$3e$__["Wrench"], {
             size: 14
         }, void 0, false, {
             fileName: "[project]/src/components/RealtimeMonitor.tsx",
-            lineNumber: 103,
+            lineNumber: 122,
             columnNumber: 40
         }, this);
         if (table === 'conversation_sessions') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$radio$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Radio$3e$__["Radio"], {
             size: 14
         }, void 0, false, {
             fileName: "[project]/src/components/RealtimeMonitor.tsx",
-            lineNumber: 104,
+            lineNumber: 123,
             columnNumber: 51
         }, this);
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$activity$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Activity$3e$__["Activity"], {
             size: 14
         }, void 0, false, {
             fileName: "[project]/src/components/RealtimeMonitor.tsx",
-            lineNumber: 105,
+            lineNumber: 124,
             columnNumber: 12
         }, this);
     };
@@ -1357,7 +1435,7 @@ function RealtimeMonitor() {
                         children: role
                     }, void 0, false, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 131,
+                        lineNumber: 150,
                         columnNumber: 20
                     }, this),
                     content && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1368,13 +1446,13 @@ function RealtimeMonitor() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 133,
+                        lineNumber: 152,
                         columnNumber: 13
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                lineNumber: 130,
+                lineNumber: 149,
                 columnNumber: 9
             }, this);
         }
@@ -1390,24 +1468,24 @@ function RealtimeMonitor() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 146,
+                        lineNumber: 165,
                         columnNumber: 13
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                         className: "preview-id",
                         children: [
                             endedAt ? 'Session ended' : 'Session started',
-                            userId && ` • User: ${userId}`
+                            userId && ` • User: ${userId.slice(0, 8)}...`
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 148,
+                        lineNumber: 167,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                lineNumber: 144,
+                lineNumber: 163,
                 columnNumber: 9
             }, this);
         }
@@ -1422,14 +1500,14 @@ function RealtimeMonitor() {
                                 size: 12
                             }, void 0, false, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 161,
+                                lineNumber: 180,
                                 columnNumber: 15
                             }, this),
                             toolName
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 160,
+                        lineNumber: 179,
                         columnNumber: 13
                     }, this),
                     durationMs !== undefined && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1440,7 +1518,7 @@ function RealtimeMonitor() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 166,
+                        lineNumber: 185,
                         columnNumber: 13
                     }, this),
                     result && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1451,18 +1529,58 @@ function RealtimeMonitor() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 169,
+                        lineNumber: 188,
                         columnNumber: 13
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                lineNumber: 158,
+                lineNumber: 177,
                 columnNumber: 9
             }, this);
         }
         return null;
     };
+    // No token configured
+    if (!token) {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            className: "realtime-monitor",
+            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "no-token-state",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$key$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Key$3e$__["Key"], {
+                        size: 48
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/RealtimeMonitor.tsx",
+                        lineNumber: 205,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                        children: "No Token Configured"
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/RealtimeMonitor.tsx",
+                        lineNumber: 206,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                        children: "Go to Settings and enter your viewing token to monitor events."
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/RealtimeMonitor.tsx",
+                        lineNumber: 207,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/src/components/RealtimeMonitor.tsx",
+                lineNumber: 204,
+                columnNumber: 9
+            }, this)
+        }, void 0, false, {
+            fileName: "[project]/src/components/RealtimeMonitor.tsx",
+            lineNumber: 203,
+            columnNumber: 7
+        }, this);
+    }
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "realtime-monitor",
         children: [
@@ -1477,14 +1595,14 @@ function RealtimeMonitor() {
                                 className: isListening ? 'pulse' : ''
                             }, void 0, false, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 185,
+                                lineNumber: 217,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                                 children: "Realtime Events"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 186,
+                                lineNumber: 218,
                                 columnNumber: 11
                             }, this),
                             isListening && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1492,13 +1610,13 @@ function RealtimeMonitor() {
                                 children: "LIVE"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 187,
+                                lineNumber: 219,
                                 columnNumber: 27
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 184,
+                        lineNumber: 216,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1513,14 +1631,14 @@ function RealtimeMonitor() {
                                         size: 16
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 196,
+                                        lineNumber: 228,
                                         columnNumber: 15
                                     }, this),
                                     "Start Listening"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 191,
+                                lineNumber: 223,
                                 columnNumber: 13
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 className: "action-btn stop",
@@ -1530,14 +1648,14 @@ function RealtimeMonitor() {
                                         size: 16
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 201,
+                                        lineNumber: 233,
                                         columnNumber: 15
                                     }, this),
                                     "Stop"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 200,
+                                lineNumber: 232,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1548,24 +1666,24 @@ function RealtimeMonitor() {
                                     size: 16
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                    lineNumber: 210,
+                                    lineNumber: 242,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 205,
+                                lineNumber: 237,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 189,
+                        lineNumber: 221,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                lineNumber: 183,
+                lineNumber: 215,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1581,7 +1699,7 @@ function RealtimeMonitor() {
                                         children: "Monitor Tables"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 218,
+                                        lineNumber: 250,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1596,31 +1714,31 @@ function RealtimeMonitor() {
                                                         disabled: isListening
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                        lineNumber: 222,
+                                                        lineNumber: 254,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                         children: getTableLabel(table)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                        lineNumber: 228,
+                                                        lineNumber: 260,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, table, true, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 221,
+                                                lineNumber: 253,
                                                 columnNumber: 17
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 219,
+                                        lineNumber: 251,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 217,
+                                lineNumber: 249,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1632,14 +1750,14 @@ function RealtimeMonitor() {
                                                 size: 14
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 236,
+                                                lineNumber: 268,
                                                 columnNumber: 15
                                             }, this),
                                             "Filter Events"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 235,
+                                        lineNumber: 267,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1655,18 +1773,18 @@ function RealtimeMonitor() {
                                                 children: type === 'all' ? 'All' : type
                                             }, type, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 241,
+                                                lineNumber: 273,
                                                 columnNumber: 17
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 239,
+                                        lineNumber: 271,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 234,
+                                lineNumber: 266,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1676,7 +1794,7 @@ function RealtimeMonitor() {
                                         children: "Statistics"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 253,
+                                        lineNumber: 285,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1686,20 +1804,20 @@ function RealtimeMonitor() {
                                                 children: "Total Events"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 255,
+                                                lineNumber: 287,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                                 children: events.length
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 256,
+                                                lineNumber: 288,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 254,
+                                        lineNumber: 286,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1709,7 +1827,7 @@ function RealtimeMonitor() {
                                                 children: "Inserts"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 259,
+                                                lineNumber: 291,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
@@ -1717,13 +1835,13 @@ function RealtimeMonitor() {
                                                 children: events.filter((e)=>e.eventType === 'INSERT').length
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 260,
+                                                lineNumber: 292,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 258,
+                                        lineNumber: 290,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1733,7 +1851,7 @@ function RealtimeMonitor() {
                                                 children: "Updates"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 265,
+                                                lineNumber: 297,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
@@ -1741,13 +1859,13 @@ function RealtimeMonitor() {
                                                 children: events.filter((e)=>e.eventType === 'UPDATE').length
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 266,
+                                                lineNumber: 298,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 264,
+                                        lineNumber: 296,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1757,7 +1875,7 @@ function RealtimeMonitor() {
                                                 children: "Deletes"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 271,
+                                                lineNumber: 303,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
@@ -1765,19 +1883,19 @@ function RealtimeMonitor() {
                                                 children: events.filter((e)=>e.eventType === 'DELETE').length
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 272,
+                                                lineNumber: 304,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 270,
+                                        lineNumber: 302,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 252,
+                                lineNumber: 284,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1787,7 +1905,7 @@ function RealtimeMonitor() {
                                         children: "By Table"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 279,
+                                        lineNumber: 311,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1797,20 +1915,20 @@ function RealtimeMonitor() {
                                                 children: "Sessions"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 281,
+                                                lineNumber: 313,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                                 children: events.filter((e)=>e.table === 'conversation_sessions').length
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 282,
+                                                lineNumber: 314,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 280,
+                                        lineNumber: 312,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1820,20 +1938,20 @@ function RealtimeMonitor() {
                                                 children: "Messages"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 285,
+                                                lineNumber: 317,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                                 children: events.filter((e)=>e.table === 'conversation_messages').length
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 286,
+                                                lineNumber: 318,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 284,
+                                        lineNumber: 316,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1843,32 +1961,59 @@ function RealtimeMonitor() {
                                                 children: "Tool Calls"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 289,
+                                                lineNumber: 321,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                                 children: events.filter((e)=>e.table === 'tool_calls').length
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 290,
+                                                lineNumber: 322,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 288,
+                                        lineNumber: 320,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                lineNumber: 278,
+                                lineNumber: 310,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "sidebar-section",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
+                                        children: "Token"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/RealtimeMonitor.tsx",
+                                        lineNumber: 327,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "token-display",
+                                        children: [
+                                            token.slice(0, 12),
+                                            "..."
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/RealtimeMonitor.tsx",
+                                        lineNumber: 328,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/components/RealtimeMonitor.tsx",
+                                lineNumber: 326,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 216,
+                        lineNumber: 248,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1882,21 +2027,21 @@ function RealtimeMonitor() {
                                         className: "pulse"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 300,
+                                        lineNumber: 339,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         children: "Waiting for events..."
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 301,
+                                        lineNumber: 340,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: "Database changes will appear here in real-time"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 302,
+                                        lineNumber: 341,
                                         columnNumber: 19
                                     }, this)
                                 ]
@@ -1906,28 +2051,28 @@ function RealtimeMonitor() {
                                         size: 32
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 306,
+                                        lineNumber: 345,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         children: "Not listening"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 307,
+                                        lineNumber: 346,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: 'Click "Start Listening" to monitor database changes'
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 308,
+                                        lineNumber: 347,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true)
                         }, void 0, false, {
                             fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                            lineNumber: 297,
+                            lineNumber: 336,
                             columnNumber: 13
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "events-list",
@@ -1943,7 +2088,7 @@ function RealtimeMonitor() {
                                                         children: event.eventType
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                        lineNumber: 317,
+                                                        lineNumber: 356,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1954,7 +2099,7 @@ function RealtimeMonitor() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                        lineNumber: 320,
+                                                        lineNumber: 359,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1962,13 +2107,13 @@ function RealtimeMonitor() {
                                                         children: event.timestamp.toLocaleTimeString()
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                        lineNumber: 324,
+                                                        lineNumber: 363,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 316,
+                                                lineNumber: 355,
                                                 columnNumber: 19
                                             }, this),
                                             renderEventPreview(event),
@@ -1979,7 +2124,7 @@ function RealtimeMonitor() {
                                                         children: "Raw payload"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                        lineNumber: 330,
+                                                        lineNumber: 369,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
@@ -1987,53 +2132,53 @@ function RealtimeMonitor() {
                                                         children: JSON.stringify(event.payload, null, 2)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                        lineNumber: 331,
+                                                        lineNumber: 370,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                                lineNumber: 329,
+                                                lineNumber: 368,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, event.id, true, {
                                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                        lineNumber: 315,
+                                        lineNumber: 354,
                                         columnNumber: 17
                                     }, this)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     ref: eventsEndRef
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                                    lineNumber: 337,
+                                    lineNumber: 376,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                            lineNumber: 313,
+                            lineNumber: 352,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                        lineNumber: 295,
+                        lineNumber: 334,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/RealtimeMonitor.tsx",
-                lineNumber: 215,
+                lineNumber: 247,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/RealtimeMonitor.tsx",
-        lineNumber: 182,
+        lineNumber: 214,
         columnNumber: 5
     }, this);
 }
-_s(RealtimeMonitor, "dF19Qqi5htWB4YMjZcM1UY1XPQc=");
+_s(RealtimeMonitor, "Fgwb6VesYBQVArsKzCt6yJ/W1U0=");
 _c = RealtimeMonitor;
 var _c;
 __turbopack_context__.k.register(_c, "RealtimeMonitor");
@@ -2053,67 +2198,40 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$save$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Save$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/save.js [app-client] (ecmascript) <export default as Save>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/check.js [app-client] (ecmascript) <export default as Check>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$alert$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__AlertCircle$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/circle-alert.js [app-client] (ecmascript) <export default as AlertCircle>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$external$2d$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ExternalLink$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/external-link.js [app-client] (ecmascript) <export default as ExternalLink>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/refresh-cw.js [app-client] (ecmascript) <export default as RefreshCw>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/supabase.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$key$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Key$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/key.js [app-client] (ecmascript) <export default as Key>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$copy$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Copy$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/copy.js [app-client] (ecmascript) <export default as Copy>");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
 ;
 ;
-;
 function Settings({ onConnectionChange }) {
     _s();
-    const [url, setUrl] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
-    const [anonKey, setAnonKey] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [token, setToken] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
     const [saved, setSaved] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const [connected, setConnected] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const [testing, setTesting] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const [testError, setTestError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [copied, setCopied] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "Settings.useEffect": ()=>{
-            // Load from localStorage if available
-            const savedUrl = localStorage.getItem('supabase_url') || '';
-            const savedKey = localStorage.getItem('supabase_anon_key') || '';
-            setUrl(savedUrl);
-            setAnonKey(savedKey);
-            setConnected((0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isConfigured"])());
+            const savedToken = localStorage.getItem('dashboard_token') || '';
+            setToken(savedToken);
         }
     }["Settings.useEffect"], []);
-    const handleSave = async ()=>{
-        localStorage.setItem('supabase_url', url);
-        localStorage.setItem('supabase_anon_key', anonKey);
-        // Reinitialize the Supabase client with new credentials
-        (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["reinitializeSupabase"])();
+    const handleSave = ()=>{
+        localStorage.setItem('dashboard_token', token);
         setSaved(true);
-        setConnected((0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isConfigured"])());
         setTimeout(()=>setSaved(false), 2000);
-        // Test the connection
-        await testConnection();
-        // Notify parent component
         onConnectionChange?.();
     };
-    const testConnection = async ()=>{
-        setTesting(true);
-        setTestError(null);
-        try {
-            const client = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["reinitializeSupabase"])();
-            // Try to fetch sessions to test the connection
-            const { error } = await client.from('conversation_sessions').select('id').limit(1);
-            if (error) {
-                setTestError(error.message);
-                setConnected(false);
-            } else {
-                setConnected(true);
-                setTestError(null);
-            }
-        } catch (err) {
-            setTestError(err instanceof Error ? err.message : 'Connection failed');
-            setConnected(false);
-        } finally{
-            setTesting(false);
-        }
+    const generateToken = ()=>{
+        const newToken = crypto.randomUUID();
+        setToken(newToken);
     };
+    const copyToken = ()=>{
+        navigator.clipboard.writeText(token);
+        setCopied(true);
+        setTimeout(()=>setCopied(false), 2000);
+    };
+    const isConfigured = Boolean(token);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "settings-page",
         children: [
@@ -2124,20 +2242,20 @@ function Settings({ onConnectionChange }) {
                         children: "Settings"
                     }, void 0, false, {
                         fileName: "[project]/src/components/Settings.tsx",
-                        lineNumber: 77,
+                        lineNumber: 43,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                        children: "Configure your Supabase connection"
+                        children: "Configure your viewing token to see your chatbot's conversations"
                     }, void 0, false, {
                         fileName: "[project]/src/components/Settings.tsx",
-                        lineNumber: 78,
+                        lineNumber: 44,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/Settings.tsx",
-                lineNumber: 76,
+                lineNumber: 42,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2148,56 +2266,36 @@ function Settings({ onConnectionChange }) {
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "card-header",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                        children: "Connection Status"
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 84,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                        className: "icon-btn",
-                                        onClick: testConnection,
-                                        disabled: testing || !url || !anonKey,
-                                        title: "Test connection",
-                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
-                                            size: 16,
-                                            className: testing ? 'spinning' : ''
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Settings.tsx",
-                                            lineNumber: 91,
-                                            columnNumber: 15
-                                        }, this)
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 85,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    children: "Connection Status"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/Settings.tsx",
+                                    lineNumber: 50,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
                                 fileName: "[project]/src/components/Settings.tsx",
-                                lineNumber: 83,
+                                lineNumber: 49,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "card-body",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: `status-indicator ${connected && !testError ? 'connected' : 'disconnected'}`,
-                                    children: connected && !testError ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                    className: `status-indicator ${isConfigured ? 'connected' : 'disconnected'}`,
+                                    children: isConfigured ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__["Check"], {
                                                 size: 20
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 98,
+                                                lineNumber: 56,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                children: "Connected to Supabase"
+                                                children: "Token configured - Ready to view conversations"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 99,
+                                                lineNumber: 57,
                                                 columnNumber: 19
                                             }, this)
                                         ]
@@ -2207,32 +2305,32 @@ function Settings({ onConnectionChange }) {
                                                 size: 20
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 103,
+                                                lineNumber: 61,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                children: testError || 'Not configured - Add your credentials below'
+                                                children: "No token set - Enter or generate a token below"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 104,
+                                                lineNumber: 62,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true)
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/Settings.tsx",
-                                    lineNumber: 95,
+                                    lineNumber: 53,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/Settings.tsx",
-                                lineNumber: 94,
+                                lineNumber: 52,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/Settings.tsx",
-                        lineNumber: 82,
+                        lineNumber: 48,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2240,157 +2338,311 @@ function Settings({ onConnectionChange }) {
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "card-header",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                        children: "Supabase Credentials"
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 115,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                        href: "https://supabase.com/dashboard",
-                                        target: "_blank",
-                                        rel: "noopener noreferrer",
-                                        className: "external-link",
-                                        children: [
-                                            "Open Supabase Dashboard",
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$external$2d$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ExternalLink$3e$__["ExternalLink"], {
-                                                size: 14
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 123,
-                                                columnNumber: 15
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 116,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    children: "Viewing Token"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/Settings.tsx",
+                                    lineNumber: 71,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
                                 fileName: "[project]/src/components/Settings.tsx",
-                                lineNumber: 114,
+                                lineNumber: 70,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "card-body",
                                 children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "info-text",
+                                        children: "This token links your chatbot's API calls to this dashboard. Use the same token in your chatbot's API requests."
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/Settings.tsx",
+                                        lineNumber: 74,
+                                        columnNumber: 13
+                                    }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "form-group",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                htmlFor: "supabase-url",
-                                                children: "Project URL"
-                                            }, void 0, false, {
+                                                htmlFor: "token",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$key$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Key$3e$__["Key"], {
+                                                        size: 14
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 81,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    "Token"
+                                                ]
+                                            }, void 0, true, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 128,
+                                                lineNumber: 80,
                                                 columnNumber: 15
                                             }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
-                                                id: "supabase-url",
-                                                type: "text",
-                                                placeholder: "https://your-project.supabase.co",
-                                                value: url,
-                                                onChange: (e)=>setUrl(e.target.value)
-                                            }, void 0, false, {
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "token-input-row",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                        id: "token",
+                                                        type: "text",
+                                                        placeholder: "Enter or generate a token",
+                                                        value: token,
+                                                        onChange: (e)=>setToken(e.target.value)
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 85,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        className: "icon-btn",
+                                                        onClick: copyToken,
+                                                        title: "Copy token",
+                                                        disabled: !token,
+                                                        children: copied ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__["Check"], {
+                                                            size: 16
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/components/Settings.tsx",
+                                                            lineNumber: 98,
+                                                            columnNumber: 29
+                                                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$copy$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Copy$3e$__["Copy"], {
+                                                            size: 16
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/components/Settings.tsx",
+                                                            lineNumber: 98,
+                                                            columnNumber: 51
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 92,
+                                                        columnNumber: 17
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 129,
+                                                lineNumber: 84,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 className: "help-text",
-                                                children: "Find this in your Supabase project settings under API"
+                                                children: "Use any string as your token, or generate a random one"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 136,
+                                                lineNumber: 101,
                                                 columnNumber: 15
                                             }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/Settings.tsx",
+                                        lineNumber: 79,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "button-row",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                className: "secondary-btn",
+                                                onClick: generateToken,
+                                                children: "Generate Random Token"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/Settings.tsx",
+                                                lineNumber: 107,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                className: "save-btn",
+                                                onClick: handleSave,
+                                                disabled: !token,
+                                                children: [
+                                                    saved ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__["Check"], {
+                                                        size: 16
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 115,
+                                                        columnNumber: 26
+                                                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$save$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Save$3e$__["Save"], {
+                                                        size: 16
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 115,
+                                                        columnNumber: 48
+                                                    }, this),
+                                                    saved ? 'Saved!' : 'Save Token'
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/Settings.tsx",
+                                                lineNumber: 110,
+                                                columnNumber: 15
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/Settings.tsx",
+                                        lineNumber: 106,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/components/Settings.tsx",
+                                lineNumber: 73,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/components/Settings.tsx",
+                        lineNumber: 69,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "settings-card",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "card-header",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    children: "API Usage"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/Settings.tsx",
+                                    lineNumber: 124,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/Settings.tsx",
+                                lineNumber: 123,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "card-body",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "info-text",
+                                        children: [
+                                            "Include your token as ",
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                                children: "user_id"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/Settings.tsx",
+                                                lineNumber: 128,
+                                                columnNumber: 37
+                                            }, this),
+                                            " in API requests:"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/Settings.tsx",
                                         lineNumber: 127,
                                         columnNumber: 13
                                     }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "form-group",
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
+                                        className: "code-block",
+                                        children: `curl -X POST ${("TURBOPACK compile-time truthy", 1) ? window.location.origin : "TURBOPACK unreachable"}/api/sessions \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "user_id": "${token || 'YOUR_TOKEN'}",
+    "wake_word_model": "hey-assistant"
+  }'`
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/Settings.tsx",
+                                        lineNumber: 130,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "info-text",
+                                        style: {
+                                            marginTop: '16px'
+                                        },
                                         children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                htmlFor: "anon-key",
-                                                children: "Anon/Public Key"
+                                            "All API endpoints use the same ",
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                                children: "user_id"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 142,
-                                                columnNumber: 15
+                                                lineNumber: 140,
+                                                columnNumber: 46
                                             }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
-                                                id: "anon-key",
-                                                type: "password",
-                                                placeholder: "your-anon-key",
-                                                value: anonKey,
-                                                onChange: (e)=>setAnonKey(e.target.value)
-                                            }, void 0, false, {
+                                            " to link data:"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/Settings.tsx",
+                                        lineNumber: 139,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
+                                        className: "endpoint-list",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                                        children: "POST /api/sessions"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 143,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    " - Create session with ",
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                                        children: "user_id"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 143,
+                                                        columnNumber: 73
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
                                                 fileName: "[project]/src/components/Settings.tsx",
                                                 lineNumber: 143,
                                                 columnNumber: 15
                                             }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "help-text",
-                                                children: "The anon key is safe to use in the browser"
-                                            }, void 0, false, {
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                                        children: "POST /api/messages"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 144,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    " - Messages inherit session's user_id"
+                                                ]
+                                            }, void 0, true, {
                                                 fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 150,
+                                                lineNumber: 144,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                                        children: "POST /api/tool-calls"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 145,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    " - Tool calls inherit message's session"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/Settings.tsx",
+                                                lineNumber: 145,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                                        children: "POST /api/sessions/[id]/end"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/Settings.tsx",
+                                                        lineNumber: 146,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    " - End a session"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/Settings.tsx",
+                                                lineNumber: 146,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 141,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                        className: "save-btn",
-                                        onClick: handleSave,
-                                        disabled: !url || !anonKey,
-                                        children: testing ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
-                                                    size: 16,
-                                                    className: "spinning"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/components/Settings.tsx",
-                                                    lineNumber: 162,
-                                                    columnNumber: 19
-                                                }, this),
-                                                "Testing..."
-                                            ]
-                                        }, void 0, true) : saved ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__["Check"], {
-                                                    size: 16
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/components/Settings.tsx",
-                                                    lineNumber: 167,
-                                                    columnNumber: 19
-                                                }, this),
-                                                "Saved!"
-                                            ]
-                                        }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$save$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Save$3e$__["Save"], {
-                                                    size: 16
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/components/Settings.tsx",
-                                                    lineNumber: 172,
-                                                    columnNumber: 19
-                                                }, this),
-                                                "Save & Connect"
-                                            ]
-                                        }, void 0, true)
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 155,
+                                        lineNumber: 142,
                                         columnNumber: 13
                                     }, this)
                                 ]
@@ -2402,179 +2654,23 @@ function Settings({ onConnectionChange }) {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/Settings.tsx",
-                        lineNumber: 113,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "settings-card",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "card-header",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                    children: "Environment Variables"
-                                }, void 0, false, {
-                                    fileName: "[project]/src/components/Settings.tsx",
-                                    lineNumber: 182,
-                                    columnNumber: 13
-                                }, this)
-                            }, void 0, false, {
-                                fileName: "[project]/src/components/Settings.tsx",
-                                lineNumber: 181,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "card-body",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "info-text",
-                                        children: [
-                                            "Alternatively, create a ",
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
-                                                children: ".env"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 186,
-                                                columnNumber: 39
-                                            }, this),
-                                            " file in your project root:"
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 185,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
-                                        className: "code-block",
-                                        children: `VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key`
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 188,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/src/components/Settings.tsx",
-                                lineNumber: 184,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/src/components/Settings.tsx",
-                        lineNumber: 180,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "settings-card",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "card-header",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                    children: "Required Tables"
-                                }, void 0, false, {
-                                    fileName: "[project]/src/components/Settings.tsx",
-                                    lineNumber: 197,
-                                    columnNumber: 13
-                                }, this)
-                            }, void 0, false, {
-                                fileName: "[project]/src/components/Settings.tsx",
-                                lineNumber: 196,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "card-body",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "info-text",
-                                        children: "This dashboard expects the following tables in your Supabase database:"
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 200,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
-                                        className: "table-list",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
-                                                        children: "conversation_sessions"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/src/components/Settings.tsx",
-                                                        lineNumber: 204,
-                                                        columnNumber: 19
-                                                    }, this),
-                                                    " - Chat session metadata"
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 204,
-                                                columnNumber: 15
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
-                                                        children: "conversation_messages"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/src/components/Settings.tsx",
-                                                        lineNumber: 205,
-                                                        columnNumber: 19
-                                                    }, this),
-                                                    " - Messages within sessions"
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 205,
-                                                columnNumber: 15
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
-                                                        children: "tool_calls"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/src/components/Settings.tsx",
-                                                        lineNumber: 206,
-                                                        columnNumber: 19
-                                                    }, this),
-                                                    " - Tool call records linked to messages"
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/src/components/Settings.tsx",
-                                                lineNumber: 206,
-                                                columnNumber: 15
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/components/Settings.tsx",
-                                        lineNumber: 203,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/src/components/Settings.tsx",
-                                lineNumber: 199,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/src/components/Settings.tsx",
-                        lineNumber: 195,
+                        lineNumber: 122,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/Settings.tsx",
-                lineNumber: 81,
+                lineNumber: 47,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/Settings.tsx",
-        lineNumber: 75,
+        lineNumber: 41,
         columnNumber: 5
     }, this);
 }
-_s(Settings, "IpD+JzIA0c50rrchDBx4kxSsp8g=");
+_s(Settings, "p8AIpLH3toCDVnV3hWjQc5Q3XHo=");
 _c = Settings;
 var _c;
 __turbopack_context__.k.register(_c, "Settings");
@@ -2595,11 +2691,9 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Sidebar
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ConversationViewer$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ConversationViewer.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$RealtimeMonitor$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/RealtimeMonitor.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Settings$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/Settings.tsx [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/supabase.ts [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
-;
 ;
 ;
 ;
@@ -2612,7 +2706,8 @@ function Home() {
     const [key, setKey] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
     const checkConfiguration = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
         "Home.useCallback[checkConfiguration]": ()=>{
-            const isReady = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isConfigured"])();
+            const token = localStorage.getItem('dashboard_token');
+            const isReady = Boolean(token);
             setConfigured(isReady);
             if (!isReady) {
                 setActiveView('settings');
@@ -2629,7 +2724,8 @@ function Home() {
     const handleConnectionChange = ()=>{
         checkConfiguration();
         setKey((prev)=>prev + 1);
-        if ((0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isConfigured"])()) {
+        const token = localStorage.getItem('dashboard_token');
+        if (token) {
             setActiveView('conversations');
         }
     };
@@ -2638,13 +2734,13 @@ function Home() {
             case 'conversations':
                 return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ConversationViewer$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ConversationViewer"], {}, key, false, {
                     fileName: "[project]/src/app/page.tsx",
-                    lineNumber: 38,
+                    lineNumber: 39,
                     columnNumber: 16
                 }, this);
             case 'realtime':
                 return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$RealtimeMonitor$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["RealtimeMonitor"], {}, key, false, {
                     fileName: "[project]/src/app/page.tsx",
-                    lineNumber: 40,
+                    lineNumber: 41,
                     columnNumber: 16
                 }, this);
             case 'settings':
@@ -2652,13 +2748,13 @@ function Home() {
                     onConnectionChange: handleConnectionChange
                 }, void 0, false, {
                     fileName: "[project]/src/app/page.tsx",
-                    lineNumber: 42,
+                    lineNumber: 43,
                     columnNumber: 16
                 }, this);
             default:
                 return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ConversationViewer$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ConversationViewer"], {}, key, false, {
                     fileName: "[project]/src/app/page.tsx",
-                    lineNumber: 44,
+                    lineNumber: 45,
                     columnNumber: 16
                 }, this);
         }
@@ -2672,7 +2768,7 @@ function Home() {
                 isConfigured: configured
             }, void 0, false, {
                 fileName: "[project]/src/app/page.tsx",
-                lineNumber: 50,
+                lineNumber: 51,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -2680,13 +2776,13 @@ function Home() {
                 children: renderContent()
             }, void 0, false, {
                 fileName: "[project]/src/app/page.tsx",
-                lineNumber: 55,
+                lineNumber: 56,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/page.tsx",
-        lineNumber: 49,
+        lineNumber: 50,
         columnNumber: 5
     }, this);
 }
