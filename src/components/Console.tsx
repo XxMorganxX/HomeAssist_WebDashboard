@@ -12,19 +12,35 @@ export function Console() {
   const [lastTimestamp, setLastTimestamp] = useState<string | null>(null)
   const [isPolling, setIsPolling] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [isAtBottom, setIsAtBottom] = useState(true)
 
   useEffect(() => {
     const savedToken = localStorage.getItem('console_token')
     setToken(savedToken)
   }, [])
 
+  // Check if user is scrolled to bottom
+  const checkIfAtBottom = () => {
+    if (!messagesContainerRef.current) return true
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
+    const threshold = 50 // pixels from bottom
+    return scrollHeight - scrollTop - clientHeight < threshold
+  }
+
+  // Handle scroll events
+  const handleScroll = () => {
+    setIsAtBottom(checkIfAtBottom())
+  }
+
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
-    if (messagesEndRef.current) {
+    // Only auto-scroll if user is at the bottom
+    if (isAtBottom && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [logs])
+  }, [logs, isAtBottom])
 
   const fetchLogs = async () => {
     if (!token) return
@@ -166,7 +182,11 @@ export function Console() {
             <span>POST to /api/console/log with token: {token.slice(0, 8)}...</span>
           </div>
         ) : (
-          <div className="chat-messages">
+          <div 
+            className="chat-messages" 
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+          >
             {logs.map((log) => {
               const messageType = log.type || 'command'
               return (
