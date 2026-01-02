@@ -33,12 +33,15 @@ export interface MessageWithToolCalls extends ConversationMessage {
 }
 
 // Console log entry (for the live console)
+export type ConsoleLogType = 'user' | 'agent' | 'command'
+
 export interface ConsoleLog {
   id: string
   timestamp: string
   token: string
   text: string
-  is_positive: boolean
+  type: ConsoleLogType
+  is_positive?: boolean // optional for backwards compatibility
 }
 
 export interface RealtimeEvent {

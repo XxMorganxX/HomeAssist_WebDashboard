@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Terminal, Trash2, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
+import { Terminal, Trash2, User, Bot, Zap, RefreshCw } from 'lucide-react'
 import type { ConsoleLog } from '@/types/database'
 
 const POLL_INTERVAL = 1000 // Poll every second
@@ -11,7 +11,7 @@ export function Console() {
   const [token, setToken] = useState<string | null>(null)
   const [lastTimestamp, setLastTimestamp] = useState<string | null>(null)
   const [isPolling, setIsPolling] = useState(false)
-  const logsEndRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -20,9 +20,9 @@ export function Console() {
   }, [])
 
   useEffect(() => {
-    // Auto-scroll to bottom when new logs arrive
-    if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    // Auto-scroll to bottom when new messages arrive
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [logs])
 
@@ -87,6 +87,38 @@ export function Console() {
     }
   }
 
+  const getMessageIcon = (type: string) => {
+    switch (type) {
+      case 'user':
+        return <User size={16} />
+      case 'agent':
+        return <Bot size={16} />
+      case 'command':
+      default:
+        return <Zap size={16} />
+    }
+  }
+
+  const getMessageLabel = (type: string) => {
+    switch (type) {
+      case 'user':
+        return 'User'
+      case 'agent':
+        return 'Agent'
+      case 'command':
+      default:
+        return 'System'
+    }
+  }
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  }
+
   // No token configured
   if (!token) {
     return (
@@ -105,7 +137,7 @@ export function Console() {
       <div className="console-header">
         <div className="console-title">
           <Terminal size={20} />
-          <h2>Console</h2>
+          <h2>Live Console</h2>
           <span className="live-badge">
             <RefreshCw size={12} className={isPolling ? 'spinning' : ''} />
             LIVE
@@ -119,7 +151,7 @@ export function Console() {
             className="icon-btn"
             onClick={clearLogs}
             disabled={logs.length === 0}
-            title="Clear logs"
+            title="Clear console"
           >
             <Trash2 size={16} />
           </button>
@@ -130,36 +162,50 @@ export function Console() {
         {logs.length === 0 ? (
           <div className="console-empty-logs">
             <Terminal size={32} className="pulse" />
-            <p>Waiting for logs...</p>
+            <p>Waiting for messages...</p>
             <span>POST to /api/console/log with token: {token.slice(0, 8)}...</span>
           </div>
         ) : (
-          <div className="console-logs">
-            {logs.map((log) => (
-              <div 
-                key={log.id} 
-                className={`console-log-entry ${log.is_positive ? 'positive' : 'negative'}`}
-              >
-                <div className="log-indicator">
-                  {log.is_positive ? (
-                    <CheckCircle size={14} className="positive-icon" />
-                  ) : (
-                    <XCircle size={14} className="negative-icon" />
-                  )}
+          <div className="chat-messages">
+            {logs.map((log) => {
+              const messageType = log.type || 'command'
+              return (
+                <div 
+                  key={log.id} 
+                  className={`chat-message ${messageType}`}
+                >
+                  <div className={`chat-avatar ${messageType}`}>
+                    {getMessageIcon(messageType)}
+                  </div>
+                  
+                  <div className="chat-content">
+                    <div className="chat-header">
+                      <span className={`chat-sender ${messageType}`}>
+                        {getMessageLabel(messageType)}
+                      </span>
+                      <span className="chat-time">
+                        {formatTime(log.timestamp)}
+                      </span>
+                      {log.is_positive !== undefined && (
+                        <span className={`chat-status ${log.is_positive ? 'success' : 'error'}`}>
+                          {log.is_positive ? '✓' : '✗'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="chat-text">
+                      {log.text}
+                    </div>
+                  </div>
                 </div>
-                <span className="log-timestamp">
-                  {new Date(log.timestamp).toLocaleTimeString()}
-                </span>
-                <span className="log-text">{log.text}</span>
-              </div>
-            ))}
-            <div ref={logsEndRef} />
+              )
+            })}
+            <div ref={messagesEndRef} />
           </div>
         )}
       </div>
 
       <div className="console-footer">
-        <span>{logs.length} log{logs.length !== 1 ? 's' : ''}</span>
+        <span>{logs.length} message{logs.length !== 1 ? 's' : ''}</span>
       </div>
     </div>
   )

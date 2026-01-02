@@ -54,8 +54,6 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
 ;
-// In-memory store for console logs (per-instance, will reset on cold starts)
-// For production, use Redis/Vercel KV or a database
 const logStore = new Map();
 // Keep only last 100 logs per token, and clean up old entries
 const MAX_LOGS_PER_TOKEN = 100;
@@ -64,7 +62,7 @@ const LOG_TTL_MS = 60 * 60 * 1000 // 1 hour
 async function POST(request) {
     try {
         const body = await request.json();
-        const { token, text, is_positive } = body;
+        const { token, text, type, is_positive } = body;
         if (!token) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
                 success: false,
@@ -81,11 +79,19 @@ async function POST(request) {
                 status: 400
             });
         }
+        // Validate type, default to 'command' for backwards compatibility
+        const validTypes = [
+            'user',
+            'agent',
+            'command'
+        ];
+        const logType = validTypes.includes(type) ? type : 'command';
         const logEntry = {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             timestamp: body.timestamp || new Date().toISOString(),
             text: String(text),
-            is_positive: Boolean(is_positive)
+            type: logType,
+            is_positive: is_positive !== undefined ? Boolean(is_positive) : undefined
         };
         // Get or create log array for this token
         if (!logStore.has(token)) {

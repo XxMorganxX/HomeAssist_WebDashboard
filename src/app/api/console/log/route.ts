@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // In-memory store for console logs (per-instance, will reset on cold starts)
 // For production, use Redis/Vercel KV or a database
+type ConsoleLogType = 'user' | 'agent' | 'command'
+
 const logStore = new Map<string, Array<{
   id: string
   timestamp: string
   text: string
-  is_positive: boolean
+  type: ConsoleLogType
+  is_positive?: boolean
 }>>()
 
 // Keep only last 100 logs per token, and clean up old entries
@@ -18,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    const { token, text, is_positive } = body
+    const { token, text, type, is_positive } = body
     
     if (!token) {
       return NextResponse.json(
@@ -34,11 +37,16 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Validate type, default to 'command' for backwards compatibility
+    const validTypes: ConsoleLogType[] = ['user', 'agent', 'command']
+    const logType: ConsoleLogType = validTypes.includes(type) ? type : 'command'
+    
     const logEntry = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: body.timestamp || new Date().toISOString(),
       text: String(text),
-      is_positive: Boolean(is_positive)
+      type: logType,
+      is_positive: is_positive !== undefined ? Boolean(is_positive) : undefined
     }
     
     // Get or create log array for this token
