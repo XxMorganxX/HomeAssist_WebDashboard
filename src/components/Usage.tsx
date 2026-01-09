@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getSupabase, isConfigured } from '@/lib/supabase'
-import { BarChart3, RefreshCw, TrendingUp, MessageSquare, Zap, LineChart } from 'lucide-react'
+import { BarChart3, RefreshCw, TrendingUp, MessageSquare, Zap, LineChart, Info } from 'lucide-react'
 
 interface SessionUsage {
   id: string
@@ -42,6 +42,7 @@ export function Usage() {
   const [chartType, setChartType] = useState<ChartType>('bar')
   const [tooltip, setTooltip] = useState<{ x: number, y: number, content: string } | null>(null)
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null)
+  const [showCostTooltip, setShowCostTooltip] = useState(false)
 
   useEffect(() => {
     const isReady = isConfigured()
@@ -182,8 +183,9 @@ export function Usage() {
   }
 
   const estimateCost = (input: number, output: number): string => {
-    // Rough estimate based on GPT-4 pricing ($0.03/1K input, $0.06/1K output)
-    const cost = (input / 1000) * 0.03 + (output / 1000) * 0.06
+    // GPT-4o Realtime API pricing (as of Jan 2025)
+    // Input: $2.50 per 1M tokens, Output: $10.00 per 1M tokens
+    const cost = (input / 1000000) * 2.50 + (output / 1000000) * 10.00
     return cost.toFixed(2)
   }
 
@@ -316,8 +318,29 @@ export function Usage() {
             <MessageSquare size={20} />
           </div>
           <div className="stat-content">
-            <span className="stat-value">${estimateCost(totalInput, totalOutput)}</span>
-            <span className="stat-label">Est. Cost (GPT-4)</span>
+            <div className="stat-value-with-tooltip">
+              <span className="stat-value">${estimateCost(totalInput, totalOutput)}</span>
+              <div 
+                className="info-tooltip-wrapper"
+                onMouseEnter={() => setShowCostTooltip(true)}
+                onMouseLeave={() => setShowCostTooltip(false)}
+              >
+                <Info size={14} className="info-icon" />
+                {showCostTooltip && (
+                  <div className="info-tooltip">
+                    <div className="info-tooltip-title">Cost Estimate</div>
+                    <div className="info-tooltip-text">
+                      Based on GPT-4o Realtime API pricing:
+                      <br />• Input: $2.50 per 1M tokens
+                      <br />• Output: $10.00 per 1M tokens
+                      <br /><br />
+                      Actual costs may vary based on your model and usage.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <span className="stat-label">Est. Cost</span>
           </div>
         </div>
       </div>
